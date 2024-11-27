@@ -1,0 +1,235 @@
+// hello world // 
+print('Hello World');
+
+// Variables
+var city = 'Bengaluru';
+var country = 'India';
+print(city, country);
+
+var population = 8400000;
+print(population);
+ 
+
+// List
+var majorCities = ['Mumbai', 'Delhi', 'Chennai', 'Kolkata'];
+print(majorCities);
+
+// Dictionary
+var cityData = {
+  'city': city,
+  'population': 8400000,
+  'elevation': 930
+};
+print(cityData);
+
+// Function
+var greet = function(name) {
+    return 'Hello ' + name;
+};
+print(greet('World'));
+
+// This is a comment //
+
+/**
+ * Function to mask clouds using the Sentinel-2 QA band
+ * @param {ee.Image} image Sentinel-2 image
+ * @return {ee.Image} cloud masked Sentinel-2 image
+ */
+function maskS2clouds(image) {
+  var qa = image.select('QA60');
+
+  // Bits 10 and 11 are clouds and cirrus, respectively.
+  var cloudBitMask = 1 << 10;
+  var cirrusBitMask = 1 << 11;
+
+  // Both flags should be set to zero, indicating clear conditions.
+  var mask = qa.bitwiseAnd(cloudBitMask).eq(0)
+      .and(qa.bitwiseAnd(cirrusBitMask).eq(0));
+
+  return image.updateMask(mask).divide(10000);
+}
+
+// Map the function over one month of data and take the median.
+// Load Sentinel-2 TOA reflectance data.
+var dataset = ee.ImageCollection('COPERNICUS/S2')
+                  .filterDate('2018-01-01', '2018-01-31')
+                  // Pre-filter to get less cloudy granules.
+                  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
+                  .map(maskS2clouds);
+
+var rgbVis = {
+  min: 0.0,
+  max: 0.3,
+  bands: ['B4', 'B3', 'B2'],
+};
+
+Map.setCenter(-9.1695, 38.6917, 12);
+Map.addLayer(dataset.median(), rgbVis, 'RGB');
+
+
+
+
+var geometry = ee.Geometry.Point([ 36.8219, -1.2921])
+Map.centerObject(geometry, 10)
+
+var s2 = ee.ImageCollection('COPERNICUS/S2_HARMONIZED');
+
+// Filter by metadata
+var filtered = s2.filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 30));
+
+// Filter by date
+var filtered = s2.filter(ee.Filter.date('2019-01-01', '2020-01-01'));
+
+// Filter by location
+var filtered = s2.filter(ee.Filter.bounds(geometry));
+
+// Let's apply all the 3 filters together on the collection
+
+// First apply metadata fileter
+var filtered1 = s2.filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 30));
+// Apply date filter on the results
+var filtered2 = filtered1.filter(
+  ee.Filter.date('2019-01-01', '2020-01-01'));
+// Lastly apply the location filter
+var filtered3 = filtered2.filter(ee.Filter.bounds(geometry));
+
+// Instead of applying filters one after the other, we can 'chain' them
+// Use the . notation to apply all the filters together
+var filtered = s2.filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 30))
+  .filter(ee.Filter.date('2019-01-01', '2020-01-01'))
+  .filter(ee.Filter.bounds(geometry));
+  
+print(filtered.size());
+
+
+var geometry = ee.Geometry.Point([77.60412933051538, 12.952912912328241]);
+var s2 = ee.ImageCollection('COPERNICUS/S2_HARMONIZED');
+
+var filtered = s2.filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 30))
+  .filter(ee.Filter.date('2019-01-01', '2020-01-01'))
+  .filter(ee.Filter.bounds(geometry));
+ 
+var mosaic = filtered.mosaic();
+ 
+var medianComposite = filtered.median();
+
+Map.centerObject(geometry, 10);
+
+var rgbVis = {
+  min: 0.0,
+  max: 3000,
+  bands: ['B4', 'B3', 'B2'],
+};
+
+Map.addLayer(filtered, rgbVis, 'Filtered Collection');
+Map.addLayer(mosaic, rgbVis, 'Mosaic');
+Map.addLayer(medianComposite, rgbVis, 'Median Composite');
+
+var admin2 = ee.FeatureCollection('FAO/GAUL_SIMPLIFIED_500m/2015/level2');
+
+var karnataka = admin2.filter(ee.Filter.eq('ADM1_NAME', 'Karnataka'));
+
+var visParams = {'color': 'red'};
+Map.addLayer(karnataka, visParams, 'Karnataka Districts');
+
+
+var admin2 = ee.FeatureCollection('FAO/GAUL_SIMPLIFIED_500m/2015/level2');
+
+// Filter for Nairobi
+var nairobi = admin2.filter(ee.Filter.eq('ADM1_NAME', 'Nairobi'));
+
+// Visualization parameters
+var visParams = {'color': 'blue'};
+Map.addLayer(nairobi, visParams, 'Nairobi Districts');
+Map.setCenter(36.8219, -1.2921, 10); // Longitude, Latitude, Zoom level
+
+var urban = ee.FeatureCollection('projects/ee-simiyuleogideon22/assets/ghs_urban_centers');
+print(urban.first());
+
+var s2 = ee.ImageCollection('COPERNICUS/S2_HARMONIZED');
+var urban = ee.FeatureCollection('projects/ee-simiyuleogideon22/assets/ghs_urban_centers');
+// Find the name of the urban centre
+// by adding the layer to the map and using Inspector.
+var filtered = urban
+  .filter(ee.Filter.eq('UC_NM_MN', 'Nairobi'))
+  .filter(ee.Filter.eq('CTR_MN_NM', 'Kenya'));
+
+var geometry = filtered.geometry();
+
+var rgbVis = {
+  min: 0.0,
+  max: 3000,
+  bands: ['B4', 'B3', 'B2'], 
+};
+var filtered = s2.filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 30))
+  .filter(ee.Filter.date('2019-01-01', '2020-01-01'))
+  .filter(ee.Filter.bounds(geometry));
+
+var image = filtered.median(); 
+
+var clipped = image.clip(geometry);
+
+Map.centerObject(geometry);
+Map.addLayer(clipped, rgbVis, 'Clipped');
+
+
+
+
+
+
+
+var s2 = ee.ImageCollection('COPERNICUS/S2_HARMONIZED');
+var urban = ee.FeatureCollection('projects/ee-simiyuleogideon22/assets/ghs_urban_centers');
+
+var filtered = urban
+  .filter(ee.Filter.eq('UC_NM_MN', 'Nairobi'))
+  .filter(ee.Filter.eq('CTR_MN_NM', 'Kenya'));
+var geometry = filtered.geometry();
+
+var rgbVis = {
+  min: 0.0,
+  max: 3000,
+  bands: ['B4', 'B3', 'B2'], 
+};
+var filtered = s2.filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 30))
+  .filter(ee.Filter.date('2019-01-01', '2020-01-01'))
+  .filter(ee.Filter.bounds(geometry));
+
+var image = filtered.median(); 
+
+var clipped = image.clip(geometry);
+
+Map.centerObject(geometry);
+Map.addLayer(clipped, rgbVis, 'Clipped');
+
+var exportImage = clipped.select('B.*');
+
+// Export raw image with original pixel values
+Export.image.toDrive({
+    image: exportImage,
+    description: 'Nairobi_Composite_Raw',
+    folder: 'earthengine',
+    fileNamePrefix: 'Nairobi_composite_raw',
+    region: geometry,
+    scale: 10,
+    maxPixels: 1e9
+});
+
+// Export visualized image as colorized RGB image
+
+// Rather than exporting raw bands, we can apply a rendered image
+// visualize() function allows you to apply the same parameters 
+// that are used in earth engine which exports a 3-band RGB image
+
+// Note: Visualized images are not suitable for analysis
+var visualized = clipped.visualize(rgbVis);
+
+Export.image.toDrive({
+    image: visualized,
+    description: 'Nairobi_Composite_Visualized',
+    folder: 'earthengine',
+    fileNamePrefix: 'Nairobi_composite_visualized',
+    region: geometry,
+    scale: 10,
+    maxPixels: 1e9
+});
